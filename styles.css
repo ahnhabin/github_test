@@ -1,0 +1,134 @@
+:root {
+  color-scheme: dark;
+  font-family: "Pretendard", "Apple SD Gothic Neo", sans-serif;
+}
+
+body {
+  margin: 0;
+  background: #0d0f14;
+  color: #f2f4f8;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  padding: 20px;
+}
+
+.hud {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 16px;
+  background: #151a24;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+}
+
+.hud__panel h1 {
+  margin: 0 0 8px 0;
+  font-size: 20px;
+}
+
+.hud__stats {
+  display: grid;
+  gap: 6px;
+  font-size: 14px;
+}
+
+.game {
+  display: flex;
+  justify-content: center;
+}
+
+canvas {
+  border: 2px solid #2b3245;
+  background: radial-gradient(circle at center, #1b2232 0%, #0e1118 70%);
+  border-radius: 12px;
+}
+
+.help {
+  background: #141824;
+  border-radius: 12px;
+  padding: 12px 16px;
+  font-size: 14px;
+}
+
+.help ol {
+  margin: 8px 0 0 16px;
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 12, 18, 0.85);
+  z-index: 10;
+}
+
+.overlay--active {
+  display: flex;
+}
+
+.overlay__panel {
+  background: #1a2030;
+  border-radius: 16px;
+  padding: 24px;
+  width: min(520px, 90vw);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+  display: grid;
+  gap: 12px;
+  text-align: center;
+}
+
+.overlay__choices {
+  display: grid;
+  gap: 10px;
+}
+
+.upgrade-card {
+  background: #242c40;
+  border: 1px solid #38425a;
+  color: #f2f4f8;
+  padding: 12px 16px;
+  border-radius: 12px;
+  cursor: pointer;
+  text-align: left;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.upgrade-card:hover {
+  transform: translateY(-2px);
+  border-color: #6ee7f5;
+}
+
+.upgrade-card h3 {
+  margin: 0 0 4px 0;
+  font-size: 16px;
+}
+
+.upgrade-card p {
+  margin: 0;
+  font-size: 13px;
+  color: #cbd5f5;
+}
+
+.overlay__button {
+  background: #4fd1c5;
+  color: #0b111b;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 16px;
+  font-weight: 600;
+  cursor: pointer;
+  display: none;
+}
+
+.overlay__button.is-visible {
+  display: inline-flex;
+  justify-self: center;
+}
