@@ -228,13 +228,13 @@ class EnemySpawner {
     return new Enemy({
       ...choice,
       position,
-      health: choice.health + round,
+      health: Math.ceil(choice.health + round * 0.4),
     });
   }
 
   getCatalog(round) {
     const base = [
-      { radius: 12, speed: 50 + round * 4, health: 2, color: "#f56565", contactDamage: 1 },
+      { radius: 12, speed: 50 + round * 4, health: 1, color: "#f56565", contactDamage: 1 },
     ];
     if (round >= 3) {
       base.push({
@@ -249,7 +249,7 @@ class EnemySpawner {
       base.push({
         radius: 16,
         speed: 40 + round * 2,
-        health: 5,
+        health: 3,
         color: "#68d391",
         contactDamage: 2,
       });
@@ -258,7 +258,7 @@ class EnemySpawner {
       base.push({
         radius: 8,
         speed: 120 + round * 5,
-        health: 2,
+        health: 1,
         color: "#63b3ed",
         contactDamage: 1,
       });
