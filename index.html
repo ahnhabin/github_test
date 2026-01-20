@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ko">
   <head>
     <meta charset="UTF-8" />
@@ -11,34 +11,34 @@
       <section class="hud" aria-live="polite">
         <div class="hud__panel">
           <h1>Survivor Prototype</h1>
-          <p>WASD ?��? 방향?�로 ?�동?�면 ?�동?�로 발사?�니??</p>
+          <p>WASD 혹은 방향키로 이동하면 자동으로 발사됩니다.</p>
         </div>
         <div class="hud__stats">
-          <div>?�운?? <span id="round">1</span></div>
-          <div>?�벨: <span id="level">1</span></div>
-          <div>경험�? <span id="exp">0</span> / <span id="next-exp">5</span></div>
-          <div>공격?? <span id="attack">1</span></div>
-          <div>발사 ?�도: <span id="fire-rate">1.0</span>s</div>
+          <div>라운드: <span id="round">1</span></div>
+          <div>레벨: <span id="level">1</span></div>
+          <div>경험치: <span id="exp">0</span> / <span id="next-exp">5</span></div>
+          <div>공격력: <span id="attack">1</span></div>
+          <div>발사 쿨타임: <span id="fire-rate">1.0</span>s</div>
         </div>
       </section>
       <section class="game">
-        <canvas id="game" width="960" height="540" aria-label="게임 ?�면"></canvas>
+        <canvas id="game" width="960" height="540" aria-label="게임 화면"></canvas>
       </section>
       <section class="help">
-        <h2>?�그?�이??/h2>
+        <h2>업그레이드</h2>
         <ol>
-          <li>공격??증�? (?�해 +1)</li>
-          <li>발사 ?�도 증�? (쿨다??-0.1s)</li>
-          <li>?�동 ?�도 증�? (+10%)</li>
+          <li>공격력 증가 (피해 +1)</li>
+          <li>발사 쿨타임 감소 (쿨다운 -0.1s)</li>
+          <li>이동 속도 증가 (+10%)</li>
         </ol>
       </section>
     </main>
     <div class="overlay" id="overlay" aria-live="polite">
       <div class="overlay__panel" id="overlay-panel">
-        <h2 id="overlay-title">?�그?�이???�택</h2>
-        <p id="overlay-description">?�하??강화�??�택?�세??</p>
+        <h2 id="overlay-title">업그레이드 선택</h2>
+        <p id="overlay-description">원하는 강화를 선택하세요.</p>
         <div class="overlay__choices" id="upgrade-choices"></div>
-        <button class="overlay__button" id="restart-button" type="button">?�시 ?�작</button>
+        <button class="overlay__button" id="restart-button" type="button">다시 시작</button>
       </div>
     </div>
     <script type="module" src="src/js/main.js"></script>
