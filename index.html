@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Survivor Prototype</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="layout">
+      <section class="hud" aria-live="polite">
+        <div class="hud__panel">
+          <h1>Survivor Prototype</h1>
+          <p>WASD 혹은 방향키로 이동하면 자동으로 발사됩니다.</p>
+        </div>
+        <div class="hud__stats">
+          <div>라운드: <span id="round">1</span></div>
+          <div>레벨: <span id="level">1</span></div>
+          <div>경험치: <span id="exp">0</span> / <span id="next-exp">5</span></div>
+          <div>공격력: <span id="attack">1</span></div>
+          <div>발사 속도: <span id="fire-rate">1.0</span>s</div>
+        </div>
+      </section>
+      <section class="game">
+        <canvas id="game" width="960" height="540" aria-label="게임 화면"></canvas>
+      </section>
+      <section class="help">
+        <h2>업그레이드</h2>
+        <ol>
+          <li>공격력 증가 (피해 +1)</li>
+          <li>발사 속도 증가 (쿨다운 -0.1s)</li>
+          <li>이동 속도 증가 (+10%)</li>
+        </ol>
+      </section>
+    </main>
+    <script src="game.js"></script>
+  </body>
+</html>
