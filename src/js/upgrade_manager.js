@@ -21,6 +21,9 @@ export default class UpgradeManager {
   applyUpgrade(option) {
     option.apply(this.game);
     this.consumePendingLevels();
+    if (option.tags && option.tags.length > 0) {
+      this.game.registerUpgradeTags(option.tags);
+    }
   }
 
   consumePendingLevels() {

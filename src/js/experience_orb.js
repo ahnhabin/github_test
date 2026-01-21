@@ -4,4 +4,9 @@ export default class ExperienceOrb {
     this.radius = 7;
     this.value = value;
   }
+
+  moveToward(target, speed, delta) {
+    const direction = target.subtract(this.position).normalize();
+    this.position = this.position.add(direction.scale(speed * delta));
+  }
 }

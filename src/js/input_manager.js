@@ -3,8 +3,25 @@ import Vector2 from "./vector2.js";
 export default class InputManager {
   constructor() {
     this.keys = new Set();
-    window.addEventListener("keydown", (event) => this.keys.add(event.key));
+    this.justPressed = new Set();
+    window.addEventListener("keydown", (event) => {
+      if (event.key === " ") {
+        event.preventDefault();
+      }
+      if (!this.keys.has(event.key)) {
+        this.justPressed.add(event.key);
+      }
+      this.keys.add(event.key);
+    });
     window.addEventListener("keyup", (event) => this.keys.delete(event.key));
+  }
+
+  consumePressed(key) {
+    if (!this.justPressed.has(key)) {
+      return false;
+    }
+    this.justPressed.delete(key);
+    return true;
   }
 
   getDirection() {

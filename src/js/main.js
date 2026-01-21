@@ -63,8 +63,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const bossOptions = [
     {
       id: "boss1",
-      name: "ë³´ìŠ¤ 1: ë§ˆë²•ì‚¬",
-      description: "ì¤‘ê±°ë¦¬ íƒ„ë§‰ ë³´ìŠ¤",
+      name: "º¸½º 1: ¸¶¹ý»ç",
+      description: "Áß°Å¸® ¸¶¹ý º¸½º",
       image: "src/asset/spritesheets/boss1/1stage/mage-1-85x94.png",
     },
   ];
@@ -237,7 +237,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!selectedCharacter) {
       return;
     }
-    game.setPlayerSprite(selectedCharacter.path);
+    game.setPlayerProfile(selectedCharacter);
     menu.classList.add("is-hidden");
     closeCharacterSelect();
     game.start();
@@ -250,3 +250,4 @@ document.addEventListener("DOMContentLoaded", () => {
   window.addEventListener("resize", resizeCanvas);
   resizeCanvas();
 });
+

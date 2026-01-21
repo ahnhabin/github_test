@@ -7,7 +7,12 @@ export default class Player {
     this.fireCooldown = 1.0;
     this.fireTimer = 0;
     this.projectileCount = 1;
-    this.pickupRadius = 60;
+    this.pickupRadius = 50;
+    this.orbPickupRadius = 16;
+    this.magnetRadius = 140;
+    this.barrierRadius = 0;
+    this.barrierDamage = 0.6;
+    this.barrierLevel = 0;
     this.expMultiplier = 1;
     this.maxHealth = 10;
     this.health = 10;
@@ -15,6 +20,7 @@ export default class Player {
     this.facing = "down";
     this.isMoving = false;
     this.animTime = 0;
+    this.stageSpeedMultiplier = 1;
   }
 
   update(delta, input) {
@@ -28,7 +34,8 @@ export default class Player {
         this.facing = direction.y < 0 ? "up" : "down";
       }
     }
-    const movement = direction.scale(this.speed * delta);
+    const speed = this.speed * (this.stageSpeedMultiplier || 1);
+    const movement = direction.scale(speed * delta);
     this.position = this.position.add(movement);
 
     this.fireTimer = Math.max(0, this.fireTimer - delta);
@@ -61,6 +68,28 @@ export default class Player {
 
   increasePickupRadius() {
     this.pickupRadius += 30;
+  }
+
+  increaseMagnetRadius() {
+    this.magnetRadius += 40;
+  }
+
+  enableBarrier() {
+    if (this.barrierLevel === 0) {
+      this.barrierLevel = 1;
+      this.barrierRadius = 70;
+      return;
+    }
+    this.increaseBarrierRadius();
+  }
+
+  increaseBarrierRadius() {
+    if (this.barrierLevel === 0) {
+      this.enableBarrier();
+      return;
+    }
+    this.barrierLevel += 1;
+    this.barrierRadius += 15;
   }
 
   increaseExpDrop() {

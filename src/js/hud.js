@@ -3,7 +3,7 @@ export default class HUD {
     this.round = document.getElementById("round");
     this.level = document.getElementById("level");
     this.killsRemaining = document.getElementById("kills-remaining");
-    this.items = document.getElementById("items");
+    this.currency = document.getElementById("currency");
     this.exp = document.getElementById("exp");
     this.nextExp = document.getElementById("next-exp");
     this.expPercent = document.getElementById("exp-percent");
@@ -15,7 +15,7 @@ export default class HUD {
 
   update(game) {
     if (this.round) {
-      this.round.textContent = game.roundManager.round;
+      this.round.textContent = game.stageManager.stage;
     }
     if (this.level) {
       this.level.textContent = game.upgradeManager.level;
@@ -23,14 +23,12 @@ export default class HUD {
     if (this.killsRemaining) {
       const remaining = Math.max(
         0,
-        (game.roundManager.killsNeeded || 0) - (game.roundManager.kills || 0)
+        (game.stageManager.killsNeeded || 0) - (game.stageManager.kills || 0)
       );
-      this.killsRemaining.textContent = game.roundManager.isBossRound() ? "-" : remaining;
+      this.killsRemaining.textContent = game.stageManager.isBossStage() ? "-" : remaining;
     }
-    if (this.items) {
-      this.items.textContent = game.drone
-        ? `드론 Lv.${game.drone.level}`
-        : "없음";
+    if (this.currency) {
+      this.currency.textContent = game.currency ?? 0;
     }
     if (this.exp) {
       this.exp.textContent = game.upgradeManager.exp;

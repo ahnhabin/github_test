@@ -86,6 +86,7 @@ export default class GameRenderer {
     this.groundTiles = [{ x: 0, y: 0 }];
     this.decorTiles = [];
     this.treeSprites = [];
+    this.theme = { tint: null, name: "grass" };
   }
 
   clear() {
@@ -140,6 +141,12 @@ export default class GameRenderer {
     }
 
     // Intentionally skip decor/trees for a clean grass-only map.
+    if (this.theme && this.theme.tint) {
+      this.context.save();
+      this.context.fillStyle = this.theme.tint;
+      this.context.fillRect(0, 0, this.canvas.width, this.canvas.height);
+      this.context.restore();
+    }
   }
 
   drawPlayer(player) {
@@ -187,14 +194,18 @@ export default class GameRenderer {
       if (this.spriteReady && enemy.spriteId && this.sprites.enemies[enemy.spriteId]) {
         const sprite = this.sprites.enemies[enemy.spriteId];
         const size = enemy.radius * 2.4;
-        this.drawSprite(sprite, enemy.position.x, enemy.position.y, size, 1);
+        const alpha = enemy.hitTimer > 0 ? 0.5 : 1;
+        this.drawSprite(sprite, enemy.position.x, enemy.position.y, size, alpha);
         return;
       }
       const screen = this.toScreen(enemy.position.x, enemy.position.y);
+      const alpha = enemy.hitTimer > 0 ? 0.5 : 1;
       this.context.fillStyle = enemy.color;
+      this.context.globalAlpha = alpha;
       this.context.beginPath();
       this.context.arc(screen.x, screen.y, enemy.radius, 0, Math.PI * 2);
       this.context.fill();
+      this.context.globalAlpha = 1;
     });
   }
 
@@ -310,11 +321,37 @@ export default class GameRenderer {
     });
   }
 
+  drawItemDrops(drops) {
+    if (!drops || drops.length === 0) {
+      return;
+    }
+    this.context.save();
+    this.context.font = "12px \"Pretendard\", sans-serif";
+    this.context.textAlign = "center";
+    this.context.textBaseline = "middle";
+    drops.forEach((drop) => {
+      const screen = this.toScreen(drop.position.x, drop.position.y);
+      const size = drop.radius * 2;
+      this.context.fillStyle = "rgba(20, 28, 40, 0.85)";
+      this.context.strokeStyle = "rgba(94, 231, 255, 0.6)";
+      this.context.lineWidth = 1;
+      this.context.fillRect(screen.x - size / 2, screen.y - size / 2, size, size);
+      this.context.strokeRect(screen.x - size / 2, screen.y - size / 2, size, size);
+      this.context.fillStyle = "#e2f1ff";
+      this.context.fillText(drop.label, screen.x, screen.y);
+    });
+    this.context.restore();
+  }
+
   drawPickupRadius(player) {
+    if (!player.barrierRadius || player.barrierRadius <= 0) {
+      return;
+    }
     const screen = this.toScreen(player.position.x, player.position.y);
-    this.context.strokeStyle = "rgba(159, 122, 234, 0.35)";
+    this.context.strokeStyle = "rgba(66, 153, 225, 0.45)";
+    this.context.lineWidth = 2;
     this.context.beginPath();
-    this.context.arc(screen.x, screen.y, player.pickupRadius, 0, Math.PI * 2);
+    this.context.arc(screen.x, screen.y, player.barrierRadius, 0, Math.PI * 2);
     this.context.stroke();
   }
 
@@ -540,6 +577,44 @@ export default class GameRenderer {
     this.context.restore();
   }
 
+  drawPortal(portal) {
+    if (!portal) {
+      return;
+    }
+    const screen = this.toScreen(portal.position.x, portal.position.y);
+    const pulse = portal.pulse ?? 0;
+    const radius = portal.radius + Math.sin(pulse * 3) * 4;
+    this.context.save();
+    this.context.strokeStyle = "rgba(94, 231, 255, 0.9)";
+    this.context.lineWidth = 3;
+    this.context.shadowColor = "rgba(94, 231, 255, 0.6)";
+    this.context.shadowBlur = 16;
+    this.context.beginPath();
+    this.context.arc(screen.x, screen.y, radius, 0, Math.PI * 2);
+    this.context.stroke();
+    this.context.strokeStyle = "rgba(94, 231, 255, 0.4)";
+    this.context.lineWidth = 2;
+    this.context.beginPath();
+    this.context.arc(screen.x, screen.y, radius * 0.6, 0, Math.PI * 2);
+    this.context.stroke();
+    this.context.restore();
+  }
+
+  drawVisibilityMask(player, radius) {
+    if (!radius || radius <= 0) {
+      return;
+    }
+    const screen = this.toScreen(player.position.x, player.position.y);
+    this.context.save();
+    this.context.fillStyle = "rgba(6, 8, 12, 0.7)";
+    this.context.fillRect(0, 0, this.canvas.width, this.canvas.height);
+    this.context.globalCompositeOperation = "destination-out";
+    this.context.beginPath();
+    this.context.arc(screen.x, screen.y, radius, 0, Math.PI * 2);
+    this.context.fill();
+    this.context.restore();
+  }
+
   setBossSprite(stage) {
     const stageIndex = stage || 1;
     this.bossStage = stageIndex;
@@ -564,5 +639,9 @@ export default class GameRenderer {
 
   setDroneLevel(level) {
     this.droneLevel = level;
+  }
+
+  setTheme(theme) {
+    this.theme = theme || { tint: null, name: "grass" };
   }
 }

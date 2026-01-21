@@ -44,14 +44,26 @@
     <div class="game">
       <canvas id="game" aria-label="게임 화면"></canvas>
     </div>
+    <div class="skill-bar" aria-live="polite">
+      <div class="skill">
+        <div class="skill__icon" id="skill-icon">
+          <div class="skill__cooldown" id="skill-cooldown"></div>
+          <span class="skill__label">필사기</span>
+        </div>
+        <div class="skill__meta">
+          <span class="skill__key">SPACE</span>
+          <span class="skill__time" id="skill-time">READY</span>
+        </div>
+      </div>
+    </div>
     <div class="hud-overlay" aria-live="polite">
       <div class="hud-overlay__title">Survivor Prototype</div>
       <div class="hud-overlay__hint">WASD 혹은 방향키로 이동하면 자동으로 발사됩니다.</div>
       <div class="hud-overlay__stats">
-        <div>라운드 <span id="round">1</span></div>
+        <div>스테이지 <span id="round">1</span></div>
         <div>레벨 <span id="level">1</span></div>
         <div>남은 처치 <span id="kills-remaining">10</span></div>
-        <div>아이템 <span id="items">없음</span></div>
+        <div>재화 <span id="currency">0</span></div>
         <div class="hud-overlay__exp">
           <span>경험치</span>
           <span id="exp-percent">0%</span>
@@ -64,6 +76,106 @@
         <div>HP <span id="hp">10 / 10</span></div>
       </div>
       <button class="hud-overlay__boss" id="boss-open" type="button">보스 도전</button>
+      <button class="hud-overlay__shop" id="shop-open" type="button">
+        상점
+        <span class="hud-overlay__badge" id="shop-badge" hidden>!</span>
+      </button>
+      <div class="hud-overlay__auto">
+        <button class="hud-overlay__auto-toggle" id="auto-toggle" type="button">AUTO OFF</button>
+        <div class="hud-overlay__auto-modes">
+          <button class="hud-overlay__auto-btn is-selected" data-auto-mode="balance" type="button">
+            BALANCE
+          </button>
+          <button class="hud-overlay__auto-btn" data-auto-mode="attack" type="button">ATTACK</button>
+          <button class="hud-overlay__auto-btn" data-auto-mode="survival" type="button">
+            SURVIVAL
+          </button>
+        </div>
+      </div>
+      <button class="hud-overlay__inventory" id="inventory-open" type="button">인벤토리</button>
+      <button class="hud-overlay__stats" id="stats-open" type="button">스탯</button>
+      <button class="hud-overlay__map" id="stage-map-open" type="button">
+        월드맵
+        <span class="hud-overlay__badge" id="stage-map-badge" hidden>!</span>
+      </button>
+    </div>
+    <div class="inventory-overlay" id="inventory-overlay" hidden>
+      <div class="inventory-panel">
+        <div class="inventory-header">
+          <h2>인벤토리</h2>
+          <button class="menu__button" id="inventory-close" type="button">닫기</button>
+        </div>
+        <div class="inventory-body">
+          <div class="inventory-list" id="inventory-list"></div>
+          <div class="inventory-detail" id="inventory-detail">
+            아이템을 선택하세요.
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="shop-overlay" id="shop-overlay" hidden>
+      <div class="shop-panel">
+        <div class="shop-header">
+          <div>
+            <h2>상점</h2>
+            <p class="shop-header__currency">보유 재화 <span id="shop-currency">0</span></p>
+          </div>
+          <button class="menu__button" id="shop-close" type="button">닫기</button>
+        </div>
+        <div class="shop-body">
+          <div class="shop-list" id="shop-list"></div>
+          <div class="shop-detail" id="shop-detail">아이템을 선택하세요.</div>
+        </div>
+        <div class="shop-actions">
+          <button class="menu__button menu__button--primary" id="shop-buy" type="button" disabled>
+            구매
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="stats-overlay" id="stats-overlay" hidden>
+      <div class="stats-panel">
+        <div class="stats-header">
+          <h2>스탯</h2>
+          <button class="menu__button" id="stats-close" type="button">닫기</button>
+        </div>
+        <div class="stats-body">
+          <div class="stats-avatar">
+            <div class="stats-avatar__image" id="stats-avatar"></div>
+            <div class="stats-avatar__name" id="stats-name">선택된 캐릭터</div>
+          </div>
+          <div class="stats-grid">
+            <div class="stats-row"><span>레벨</span><span id="stats-level">1</span></div>
+            <div class="stats-row"><span>스테이지</span><span id="stats-round">1</span></div>
+            <div class="stats-row"><span>남은 처치</span><span id="stats-kills">10</span></div>
+            <div class="stats-row"><span>HP</span><span id="stats-hp">10 / 10</span></div>
+            <div class="stats-row"><span>공격력</span><span id="stats-attack">1</span></div>
+            <div class="stats-row"><span>발사 쿨타임</span><span id="stats-fire-rate">1.0s</span></div>
+            <div class="stats-row"><span>이동 속도</span><span id="stats-speed">160</span></div>
+            <div class="stats-row"><span>투사체 수</span><span id="stats-projectiles">1</span></div>
+            <div class="stats-row"><span>자석 범위</span><span id="stats-pickup">60</span></div>
+            <div class="stats-row"><span>경험치 배율</span><span id="stats-exp">1.0</span></div>
+            <div class="stats-row"><span>드론</span><span id="stats-drone">없음</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="stage-map-overlay" id="stage-map-overlay" hidden>
+      <div class="stage-map-panel">
+        <div class="stage-map-header">
+          <div>
+            <h2>월드맵</h2>
+            <p class="stage-map-subtitle" id="stage-map-subtitle">스테이지 1</p>
+          </div>
+          <button class="menu__button" id="stage-map-close" type="button">닫기</button>
+        </div>
+        <div class="stage-map-grid" id="stage-map-grid"></div>
+        <div class="stage-map-legend">
+          <span class="stage-map-legend__item">현재 스테이지</span>
+          <span class="stage-map-legend__item">잠금 해제됨</span>
+          <span class="stage-map-legend__item">잠금</span>
+        </div>
+      </div>
     </div>
     <div class="boss-select-overlay" id="boss-select-overlay" hidden>
       <div class="boss-select">
