@@ -1,9 +1,9 @@
-export default class Projectile {
-  constructor(position, direction, speed, damage) {
+export default class BossProjectile {
+  constructor(position, velocity, damage) {
     this.position = position;
-    this.velocity = direction.normalize().scale(speed);
+    this.velocity = velocity;
     this.damage = damage;
-    this.radius = 4 + Math.min(4, Math.floor(damage / 2));
+    this.radius = 8;
     this.isActive = true;
   }
 

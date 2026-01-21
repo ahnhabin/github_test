@@ -6,6 +6,7 @@ export default class Enemy {
     this.health = config.health;
     this.color = config.color;
     this.contactDamage = config.contactDamage;
+    this.spriteId = config.spriteId;
   }
 
   update(delta, target) {

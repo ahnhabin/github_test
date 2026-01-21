@@ -1,17 +1,28 @@
 export default class RoundManager {
   constructor() {
     this.round = 1;
-    this.roundDuration = 20;
-    this.timer = 0;
+    this.kills = 0;
+    this.killsNeeded = 10;
   }
 
-  update(delta) {
-    this.timer += delta;
-    if (this.timer >= this.roundDuration) {
-      this.round += 1;
-      this.timer = 0;
+  isBossRound() {
+    return false;
+  }
+
+  registerKill() {
+    this.kills += 1;
+    if (this.kills >= this.killsNeeded) {
+      this.advanceRound();
       return true;
     }
     return false;
+  }
+
+  advanceRound() {
+    this.round += 1;
+    this.kills = 0;
+    if (!this.isBossRound()) {
+      this.killsNeeded = this.round * 10;
+    }
   }
 }

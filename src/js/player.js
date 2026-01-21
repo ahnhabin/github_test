@@ -12,14 +12,24 @@ export default class Player {
     this.maxHealth = 10;
     this.health = 10;
     this.invulnerableTimer = 0;
+    this.facing = "down";
+    this.isMoving = false;
+    this.animTime = 0;
   }
 
-  update(delta, input, bounds) {
+  update(delta, input) {
     const direction = input.getDirection();
+    this.isMoving = direction.length() > 0;
+    if (this.isMoving) {
+      this.animTime += delta;
+      if (Math.abs(direction.x) > Math.abs(direction.y)) {
+        this.facing = direction.x < 0 ? "left" : "right";
+      } else {
+        this.facing = direction.y < 0 ? "up" : "down";
+      }
+    }
     const movement = direction.scale(this.speed * delta);
     this.position = this.position.add(movement);
-    this.position.x = Math.max(this.radius, Math.min(bounds.width - this.radius, this.position.x));
-    this.position.y = Math.max(this.radius, Math.min(bounds.height - this.radius, this.position.y));
 
     this.fireTimer = Math.max(0, this.fireTimer - delta);
     this.invulnerableTimer = Math.max(0, this.invulnerableTimer - delta);
