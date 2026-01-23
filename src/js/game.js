@@ -71,7 +71,6 @@ export default class Game {
     this.bossName = document.getElementById("boss-name");
     this.bossHpText = document.getElementById("boss-hp-text");
     this.bossHpBar = document.getElementById("boss-hp-bar");
-    this.bossCancel = document.getElementById("boss-cancel-run");
     this.autoToggle = document.getElementById("auto-toggle");
     this.autoModeButtons = document.querySelectorAll("[data-auto-mode]");
     this.inventoryOpen = document.getElementById("inventory-open");
@@ -93,6 +92,12 @@ export default class Game {
     this.stageMapClose = document.getElementById("stage-map-close");
     this.stageMapSubtitle = document.getElementById("stage-map-subtitle");
     this.stageMapBadge = document.getElementById("stage-map-badge");
+    this.menuOpen = document.getElementById("menu-open");
+    this.menuOverlay = document.getElementById("game-menu-overlay");
+    this.menuClose = document.getElementById("menu-close");
+    this.menuSave = document.getElementById("game-save");
+    this.menuMain = document.getElementById("game-main-menu");
+    this.menuDailyBoss = document.getElementById("daily-boss-open");
     this.statsOpen = document.getElementById("stats-open");
     this.statsOverlay = document.getElementById("stats-overlay");
     this.statsClose = document.getElementById("stats-close");
@@ -113,20 +118,45 @@ export default class Game {
     this.selectedShopId = null;
     this.playerProfile = null;
     this.playerSpritePath = null;
-    this.currencyKey = "survivorPrototypeCurrency";
-    this.currency = this.loadCurrency();
+    this.baseSaveKey = "survivorPrototypeSave";
+    this.baseCurrencyKey = "survivorPrototypeCurrency";
+    this.saveSlot = null;
+    this.currency = 0;
     this.shopItems = [];
     this.shopHasUpdate = false;
     this.skillCooldown = 8;
     this.skillTimer = 0;
     this.skillCooldownEl = document.getElementById("skill-cooldown");
     this.skillTimeEl = document.getElementById("skill-time");
-    this.bossCancel = document.getElementById("boss-cancel-run");
+    this.skillTree = {
+      q: { name: "집중공격", cooldown: 6, timer: 0, labelEl: null, timeEl: null, cdEl: null },
+      w: { name: "속도증가", cooldown: 12, timer: 0, labelEl: null, timeEl: null, cdEl: null },
+      e: { name: "쿨다운", cooldown: 18, timer: 0, labelEl: null, timeEl: null, cdEl: null },
+      r: { name: "잠금", cooldown: 0, timer: 0, disabled: true, labelEl: null, timeEl: null, cdEl: null },
+    };
+    this.rapidFocus = { active: false, timer: 0, tick: 0 };
+    this.skillTreeElements = this.loadSkillTreeElements();
     this.pendingUpgrades = [];
     this.isStageBoss = false;
     this.stageVisibilityRadius = 0;
     this.portal = null;
     this.stageMapHasUpdate = false;
+    this.returnToMenu = false;
+    this.autoSaveTimer = null;
+    this.stageBossSpriteId = null;
+    this.dailyChallengeActive = false;
+    this.dailyBossDateKey = "survivorPrototypeDailyBossDate";
+    this.stageBossSprites = [
+      "spider",
+      "dino",
+      "bunny",
+      "snake",
+      "turtle",
+      "eyeball",
+      "goblin",
+      "beast",
+      "slime",
+    ];
     this.registerOverlayHandlers();
     this.refreshShop(false);
     this.applyStageSettings();
@@ -149,7 +179,18 @@ export default class Game {
     });
 
     this.restartButton.addEventListener("click", () => {
-      window.location.reload();
+      if (this.saveSlot) {
+        const profile = this.playerProfile;
+        this.resetForNewGame(this.saveSlot);
+        if (profile) {
+          this.setPlayerProfile(profile);
+        }
+        this.hideOverlay();
+        this.isGameOver = false;
+        this.setPaused(false);
+      } else {
+        window.location.reload();
+      }
     });
 
     this.menuButton.addEventListener("click", () => {
@@ -174,6 +215,7 @@ export default class Game {
 
     if (this.inventoryOpen && this.inventoryOverlay) {
       this.inventoryOpen.addEventListener("click", () => {
+        this.prepareMenuNavigation();
         this.openInventory();
       });
     }
@@ -186,6 +228,7 @@ export default class Game {
 
     if (this.shopOpen && this.shopOverlay) {
       this.shopOpen.addEventListener("click", () => {
+        this.prepareMenuNavigation();
         this.openShop();
       });
     }
@@ -213,8 +256,50 @@ export default class Game {
       });
     }
 
+    if (this.menuOpen && this.menuOverlay) {
+      this.menuOpen.addEventListener("click", () => {
+        this.openGameMenu();
+      });
+    }
+
+    if (this.menuClose && this.menuOverlay) {
+      this.menuClose.addEventListener("click", () => {
+        this.closeGameMenu();
+      });
+    }
+
+    if (this.menuSave) {
+      this.menuSave.addEventListener("click", () => {
+        this.saveGame();
+        window.alert("저장되었습니다.");
+      });
+    }
+
+    if (this.menuDailyBoss) {
+      this.menuDailyBoss.addEventListener("click", () => {
+        if (!this.saveSlot) {
+          window.alert("먼저 새 게임이나 이어하기로 슬롯을 선택하세요.");
+          return;
+        }
+        if (!this.canStartDailyBoss()) {
+          window.alert("오늘의 일일 보스 도전은 이미 완료했습니다.");
+          return;
+        }
+        this.closeGameMenu();
+        this.startDailyBossChallenge();
+      });
+    }
+
+    if (this.menuMain) {
+      this.menuMain.addEventListener("click", () => {
+        this.saveGame();
+        window.location.reload();
+      });
+    }
+
     if (this.stageMapOpen && this.stageMapOverlay) {
       this.stageMapOpen.addEventListener("click", () => {
+        this.prepareMenuNavigation();
         this.openStageMap();
       });
     }
@@ -242,6 +327,7 @@ export default class Game {
 
     if (this.statsOpen && this.statsOverlay) {
       this.statsOpen.addEventListener("click", () => {
+        this.prepareMenuNavigation();
         this.openStats();
       });
     }
@@ -274,8 +360,9 @@ export default class Game {
   }
 
   setPlayerSprite(path) {
-    this.playerSpritePath = path || null;
-    this.renderer.setPlayerSprite(path);
+    const resolvedPath = this.resolvePlayerSpritePath({ path });
+    this.playerSpritePath = resolvedPath || null;
+    this.renderer.setPlayerSprite(resolvedPath);
     this.updateStatsAvatar();
   }
 
@@ -283,15 +370,298 @@ export default class Game {
     if (!profile) {
       return;
     }
-    this.playerProfile = profile;
-    this.setPlayerSprite(profile.path);
+    const resolvedPath = this.resolvePlayerSpritePath(profile);
+    this.playerProfile = { ...profile, path: resolvedPath };
+    this.setPlayerSprite(resolvedPath);
     if (this.statsName) {
       this.statsName.textContent = profile.id || "선택된 캐릭터";
     }
   }
 
+  resolvePlayerSpritePath(profile) {
+    if (!profile) {
+      return null;
+    }
+    const id = profile.id || "";
+    const legacyPath = profile.path || "";
+    if (id) {
+      if (/^F_\d+$/i.test(id)) {
+        return `src/assets/characters/female/${id.toLowerCase()}.png`;
+      }
+      if (/^M_\d+$/i.test(id)) {
+        return `src/assets/characters/male/${id.toLowerCase()}.png`;
+      }
+    }
+    return legacyPath || null;
+  }
+
   setPaused(value) {
     this.isPaused = value;
+  }
+
+  setSaveSlot(slotId) {
+    if (!slotId) {
+      return;
+    }
+    this.saveSlot = slotId;
+    window.localStorage.setItem("survivorPrototypeLastSlot", slotId);
+    this.currency = this.loadCurrency();
+    this.updateShopUi();
+  }
+
+  resetForNewGame(slotId) {
+    this.setSaveSlot(slotId);
+    this.player = new Player(new Vector2(0, 0));
+    this.upgradeManager = new UpgradeManager(this);
+    this.stageManager = new StageManager(50);
+    this.enemies = [];
+    this.projectiles = [];
+    this.bossProjectiles = [];
+    this.experienceOrbs = [];
+    this.drone = null;
+    this.itemDrops = [];
+    this.items = new Map();
+    this.itemDefinitions = new Map();
+    this.synergyCounts = {
+      attack: 0,
+      rapid: 0,
+      survival: 0,
+      summon: 0,
+      utility: 0,
+    };
+    this.synergyApplied = new Set();
+    this.boss = null;
+    this.bossStage = 0;
+    this.isBossChallenge = false;
+    this.isStageBoss = false;
+    this.stageVisibilityRadius = 0;
+    this.portal = null;
+    this.stageMapHasUpdate = false;
+    this.dailyChallengeActive = false;
+    this.stageBossSpriteId = null;
+    this.rapidFocus = { active: false, timer: 0, tick: 0 };
+    Object.values(this.skillTree).forEach((skill) => {
+      skill.timer = 0;
+    });
+    this.skillTimer = 0;
+    this.currency = this.loadCurrency();
+    this.applyStageSettings();
+    this.updateInventoryUi();
+    this.updateShopUi();
+    this.updateStatsUi();
+    this.renderStageMap();
+    this.isGameOver = false;
+    this.hideOverlay();
+    this.setPaused(false);
+  }
+
+  loadFromSave(data, slotId) {
+    if (!data) {
+      return;
+    }
+    this.setSaveSlot(slotId);
+    this.player = new Player(new Vector2(0, 0));
+    this.upgradeManager = new UpgradeManager(this);
+    this.stageManager = new StageManager(50);
+    this.enemies = [];
+    this.projectiles = [];
+    this.bossProjectiles = [];
+    this.experienceOrbs = [];
+    this.drone = null;
+    this.itemDrops = [];
+    this.items = new Map();
+    this.itemDefinitions = new Map();
+    this.synergyCounts = data.synergyCounts || {
+      attack: 0,
+      rapid: 0,
+      survival: 0,
+      summon: 0,
+      utility: 0,
+    };
+    this.synergyApplied = new Set(data.synergyApplied || []);
+    this.boss = null;
+    this.bossStage = 0;
+    this.isBossChallenge = false;
+    this.isStageBoss = false;
+    this.portal = null;
+    this.stageMapHasUpdate = false;
+    this.dailyChallengeActive = false;
+    this.stageBossSpriteId = null;
+    this.rapidFocus = { active: false, timer: 0, tick: 0 };
+    Object.values(this.skillTree).forEach((skill) => {
+      skill.timer = 0;
+    });
+    this.skillTimer = 0;
+    this.isGameOver = false;
+
+    if (data.playerProfile) {
+      this.playerProfile = {
+        ...data.playerProfile,
+        path: this.resolvePlayerSpritePath(data.playerProfile),
+      };
+      this.setPlayerSprite(this.playerProfile.path);
+    }
+
+    this.applySavedPlayerStats(data.playerStats || {});
+    if (this.player.health <= 0) {
+      this.player.health = this.player.maxHealth;
+    }
+    this.applySavedUpgrades(data.upgrades || {});
+    this.applySavedStage(data.stageState || {});
+    this.applySavedItems(data.items || []);
+    this.applySavedDrone(data.droneLevel || 0);
+    this.applySavedBarrier(data.barrier || null);
+
+    this.currency = Number.isFinite(data.currency) ? data.currency : this.currency;
+    this.saveCurrency();
+
+    this.applyStageSettings();
+    this.updateInventoryUi();
+    this.updateShopUi();
+    this.updateStatsUi();
+    this.renderStageMap();
+    this.hideOverlay();
+    this.setPaused(false);
+  }
+
+  applySavedPlayerStats(stats) {
+    this.player.attackPower = stats.attackPower ?? this.player.attackPower;
+    this.player.fireCooldown = stats.fireCooldown ?? this.player.fireCooldown;
+    this.player.projectileCount = stats.projectileCount ?? this.player.projectileCount;
+    this.player.speed = stats.speed ?? this.player.speed;
+    this.player.pickupRadius = stats.pickupRadius ?? this.player.pickupRadius;
+    this.player.magnetRadius = stats.magnetRadius ?? this.player.magnetRadius;
+    this.player.orbPickupRadius = stats.orbPickupRadius ?? this.player.orbPickupRadius;
+    this.player.expMultiplier = stats.expMultiplier ?? this.player.expMultiplier;
+    this.player.maxHealth = stats.maxHealth ?? this.player.maxHealth;
+    this.player.health = Math.min(stats.health ?? this.player.health, this.player.maxHealth);
+  }
+
+  applySavedUpgrades(upgrades) {
+    this.upgradeManager.level = upgrades.level ?? this.upgradeManager.level;
+    this.upgradeManager.exp = upgrades.exp ?? this.upgradeManager.exp;
+    this.upgradeManager.nextExp = upgrades.nextExp ?? this.upgradeManager.nextExp;
+  }
+
+  applySavedStage(stageState) {
+    if (!stageState) {
+      return;
+    }
+    this.stageManager.stage = stageState.stage ?? this.stageManager.stage;
+    this.stageManager.unlockedStage =
+      stageState.unlockedStage ?? this.stageManager.unlockedStage;
+    this.stageManager.kills = stageState.kills ?? 0;
+    this.stageManager.killsNeeded =
+      stageState.killsNeeded ?? this.stageManager.getKillsNeeded(this.stageManager.stage);
+    this.stageManager.cleared = stageState.cleared ?? false;
+  }
+
+  applySavedItems(items) {
+    if (!Array.isArray(items)) {
+      return;
+    }
+    items.forEach((item) => {
+      this.items.set(item.id, {
+        name: item.name,
+        description: item.description || "",
+        count: item.count || 1,
+      });
+      this.itemDefinitions.set(item.id, {
+        name: item.name,
+        description: item.description || "",
+      });
+    });
+  }
+
+  applySavedDrone(level) {
+    if (!level || level <= 0) {
+      return;
+    }
+    this.drone = new Drone({
+      level,
+      position: new Vector2(this.player.position.x, this.player.position.y),
+      orbitRadius: 90,
+      orbitSpeed: 2.1 + (level - 1) * 0.3,
+      attackPower: 1 + (level - 1),
+      attackSpeed: 320 + (level - 1) * 40,
+      attackRange: 420 + (level - 1) * 40,
+      hitCooldown: Math.max(0.3, 0.6 - (level - 1) * 0.05),
+      radius: 14,
+    });
+    this.renderer.setDroneLevel(level);
+  }
+
+  applySavedBarrier(barrier) {
+    if (!barrier) {
+      return;
+    }
+    this.player.barrierLevel = barrier.level || 0;
+    this.player.barrierRadius = barrier.radius || 0;
+    this.player.barrierDamage = barrier.damage || this.player.barrierDamage;
+  }
+
+  exportSaveState() {
+    return {
+      updatedAt: Date.now(),
+      stage: this.stageManager.stage,
+      level: this.upgradeManager.level,
+      playerProfile: this.playerProfile,
+      playerStats: {
+        attackPower: this.player.attackPower,
+        fireCooldown: this.player.fireCooldown,
+        projectileCount: this.player.projectileCount,
+        speed: this.player.speed,
+        pickupRadius: this.player.pickupRadius,
+        magnetRadius: this.player.magnetRadius,
+        orbPickupRadius: this.player.orbPickupRadius,
+        expMultiplier: this.player.expMultiplier,
+        maxHealth: this.player.maxHealth,
+        health: this.player.health,
+      },
+      upgrades: {
+        level: this.upgradeManager.level,
+        exp: this.upgradeManager.exp,
+        nextExp: this.upgradeManager.nextExp,
+      },
+      stageState: {
+        stage: this.stageManager.stage,
+        unlockedStage: this.stageManager.unlockedStage,
+        kills: this.stageManager.kills,
+        killsNeeded: this.stageManager.killsNeeded,
+        cleared: this.stageManager.cleared,
+      },
+      items: Array.from(this.items.entries()).map(([id, item]) => ({
+        id,
+        name: item.name,
+        description: item.description || "",
+        count: item.count || 1,
+      })),
+      droneLevel: this.drone?.level || 0,
+      barrier: {
+        level: this.player.barrierLevel,
+        radius: this.player.barrierRadius,
+        damage: this.player.barrierDamage,
+      },
+      currency: this.currency,
+      synergyCounts: this.synergyCounts,
+      synergyApplied: Array.from(this.synergyApplied),
+    };
+  }
+
+  saveGame() {
+    if (!this.saveSlot) {
+      return;
+    }
+    const data = this.exportSaveState();
+    try {
+      window.localStorage.setItem(
+        `${this.baseSaveKey}:${this.saveSlot}`,
+        JSON.stringify(data)
+      );
+      window.localStorage.setItem("survivorPrototypeLastSlot", this.saveSlot);
+    } catch (error) {
+      // Ignore save errors.
+    }
   }
 
   start() {
@@ -300,7 +670,24 @@ export default class Game {
     }
     this.hasStarted = true;
     this.lastTime = performance.now();
+    if (!this.autoSaveTimer) {
+      this.autoSaveTimer = window.setInterval(() => {
+        this.saveGame();
+      }, 30000);
+    }
+    this.saveGame();
     requestAnimationFrame(this.loop);
+  }
+
+  loadSkillTreeElements() {
+    const map = {};
+    ["q", "w", "e", "r"].forEach((key) => {
+      map[key] = {
+        cdEl: document.getElementById(`skill-${key}-cd`),
+        timeEl: document.getElementById(`skill-${key}-time`),
+      };
+    });
+    return map;
   }
 
   loop(timestamp) {
@@ -320,6 +707,7 @@ export default class Game {
     if (this.isPaused) {
       this.hud.update(this);
       this.updateSkillUi();
+      this.updateSkillTreeUi();
       this.updateStatsUi();
       return;
     }
@@ -358,6 +746,7 @@ export default class Game {
     this.updateBossUi();
     this.updateAutoUi();
     this.updateSkillUi();
+    this.updateSkillTreeUi();
     this.updateStatsUi();
   }
 
@@ -468,7 +857,8 @@ export default class Game {
         return;
       }
       if (enemy.isDead()) {
-        const expValue = Math.ceil(2 * this.player.expMultiplier);
+        const expScale = 1 + this.stageManager.stage * 0.05;
+        const expValue = Math.ceil(2 * this.player.expMultiplier * expScale);
         this.experienceOrbs.push(new ExperienceOrb(enemy.position, expValue));
         this.addCurrency(enemy.reward || 1);
         this.maybeDropItem(enemy.position);
@@ -501,13 +891,112 @@ export default class Game {
       this.skillTimer = Math.max(0, this.skillTimer - delta);
     }
     if (!this.input.consumePressed(" ")) {
+      this.updateSkillTree(delta);
       return;
     }
     if (this.skillTimer > 0) {
+      this.updateSkillTree(delta);
       return;
     }
     this.castSkill();
     this.skillTimer = this.skillCooldown;
+    this.updateSkillTree(delta);
+  }
+
+  updateSkillTree(delta) {
+    this.updateRapidFocus(delta);
+    Object.values(this.skillTree).forEach((skill) => {
+      if (skill.timer > 0) {
+        skill.timer = Math.max(0, skill.timer - delta);
+      }
+    });
+
+    if (this.input.consumePressed("q")) {
+      this.tryCastSkill("q");
+    }
+    if (this.input.consumePressed("w")) {
+      this.tryCastSkill("w");
+    }
+    if (this.input.consumePressed("e")) {
+      this.tryCastSkill("e");
+    }
+    if (this.input.consumePressed("r")) {
+      this.tryCastSkill("r");
+    }
+  }
+
+  tryCastSkill(key) {
+    const skill = this.skillTree[key];
+    if (!skill || skill.disabled) {
+      return;
+    }
+    if (skill.timer > 0) {
+      return;
+    }
+    if (key === "q") {
+      this.castFocusedBurst(22, 0.6, 380, 1.1);
+      skill.timer = skill.cooldown;
+      return;
+    }
+    if (key === "w") {
+      this.startRapidFocus();
+      skill.timer = skill.cooldown;
+      return;
+    }
+    if (key === "e") {
+      this.reduceAllSkillCooldowns(0.4);
+      skill.timer = skill.cooldown;
+    }
+  }
+
+  castFocusedBurst(count, spread, speed, damageMultiplier) {
+    const target = this.findClosestEnemy();
+    if (!target) {
+      return;
+    }
+    const direction = target.position.subtract(this.player.position).normalize();
+    const baseAngle = Math.atan2(direction.y, direction.x);
+    const start = baseAngle - (spread * (count - 1)) / 2;
+    for (let i = 0; i < count; i += 1) {
+      const angle = start + spread * i;
+      const dir = new Vector2(Math.cos(angle), Math.sin(angle));
+      const damage = Math.max(1, this.player.attackPower * damageMultiplier);
+      this.projectiles.push(
+        new Projectile(new Vector2(this.player.position.x, this.player.position.y), dir, speed, damage)
+      );
+    }
+  }
+
+  startRapidFocus() {
+    this.rapidFocus = { active: true, timer: 3.2, tick: 0 };
+    this.player.stageSpeedMultiplier = (this.player.stageSpeedMultiplier || 1) * 1.2;
+  }
+
+  updateRapidFocus(delta) {
+    if (!this.rapidFocus.active) {
+      return;
+    }
+    this.rapidFocus.timer -= delta;
+    this.rapidFocus.tick -= delta;
+    if (this.rapidFocus.tick <= 0) {
+      this.rapidFocus.tick = 0.12;
+      this.castFocusedBurst(8, 0.35, 420, 0.75);
+    }
+    if (this.rapidFocus.timer <= 0) {
+      this.rapidFocus.active = false;
+      this.player.stageSpeedMultiplier = this.getStageDifficulty().speedPenalty;
+    }
+  }
+
+  reduceAllSkillCooldowns(ratio) {
+    const multiplier = Math.max(0, Math.min(1, 1 - ratio));
+    Object.keys(this.skillTree).forEach((key) => {
+      if (key === "e") {
+        return;
+      }
+      this.skillTree[key].timer *= multiplier;
+    });
+    this.skillTimer *= multiplier;
   }
 
   castSkill() {
@@ -612,28 +1101,34 @@ export default class Game {
     const difficultyScale = difficulty === "hard" ? 1.9 : 1.2;
     const stageScale = 1 + (this.bossStage - 1) * 0.6;
     const stageDifficultyScale = this.isStageBoss
-      ? 1 + this.stageManager.stage * 0.03
+      ? 1 + this.stageManager.stage * 0.04
       : 1;
+    const isCritterBoss = this.isStageBoss;
+    const baseRadius = isCritterBoss ? 70 + this.stageManager.stage * 1.2 : 38 + (this.bossStage - 1) * 6;
     this.boss = new Boss({
       position: new Vector2(this.player.position.x + 200, this.player.position.y - 120),
-      radius: 38 + (this.bossStage - 1) * 6,
+      radius: baseRadius,
       maxHealth: Math.floor(260 * difficultyScale * stageScale * stageDifficultyScale),
-      speed: (55 + (this.bossStage - 1) * 8) * stageDifficultyScale,
+      speed: (isCritterBoss ? 70 : 55 + (this.bossStage - 1) * 8) * stageDifficultyScale,
       damage: Math.ceil(
         (difficultyScale > 1 ? 4 + this.bossStage : 3 + this.bossStage) * stageDifficultyScale
       ),
-      projectileSpeed: 210 * stageDifficultyScale,
+      projectileSpeed: (isCritterBoss ? 240 : 210) * stageDifficultyScale,
       attackInterval: Math.max(0.55, 1.3 - (this.bossStage - 1) * 0.18),
       burstInterval: Math.max(1.9, 3.8 - (this.bossStage - 1) * 0.5),
+      spriteType: isCritterBoss ? "critter" : "mage",
+      spriteId: isCritterBoss ? this.stageBossSpriteId : null,
     });
     this.enemies = [];
     this.spawner.spawnTimer = 0;
     if (this.bossName) {
       this.bossName.textContent = this.isStageBoss
         ? `${this.stageManager.stage}스테이지 보스`
-        : `${this.bossStage}스테이지 보스`;
+        : `일일 보스 ${this.bossStage}단계`;
     }
-    this.renderer.setBossSprite(this.bossStage);
+    if (!isCritterBoss) {
+      this.renderer.setBossSprite(this.bossStage);
+    }
   }
 
   updateBoss(delta) {
@@ -648,7 +1143,7 @@ export default class Game {
     if (this.boss.canAttack()) {
       const dir = this.boss.getAimDirection(this.player.position);
       const spread = 0.26 + this.bossStage * 0.08;
-      const count = 4 + this.bossStage * 3;
+      const count = 4 + this.bossStage * 3 + (this.isStageBoss ? 6 : 0);
       const baseAngle = Math.atan2(dir.y, dir.x);
       const start = baseAngle - (spread * (count - 1)) / 2;
       for (let i = 0; i < count; i += 1) {
@@ -659,6 +1154,19 @@ export default class Game {
         this.bossProjectiles.push(
           new BossProjectile(new Vector2(this.boss.position.x, this.boss.position.y), velocity, 2)
         );
+      }
+      if (this.isStageBoss) {
+        const ringCount = 10 + Math.floor(this.stageManager.stage / 2);
+        const offset = this.boss.animTime * 1.4;
+        for (let i = 0; i < ringCount; i += 1) {
+          const angle = (Math.PI * 2 * i) / ringCount + offset;
+          const velocity = new Vector2(Math.cos(angle), Math.sin(angle)).scale(
+            this.boss.projectileSpeed * 0.9
+          );
+          this.bossProjectiles.push(
+            new BossProjectile(new Vector2(this.boss.position.x, this.boss.position.y), velocity, 1)
+          );
+        }
       }
       this.boss.resetAttack();
     }
@@ -678,8 +1186,17 @@ export default class Game {
     }
 
     if (this.boss.isDead()) {
-      this.addCurrency(200 * this.bossStage);
-      this.experienceOrbs.push(new ExperienceOrb(this.boss.position, 1000));
+      if (this.dailyChallengeActive) {
+        const rewardCurrency = 4000;
+        const rewardExp = 8000;
+        this.addCurrency(rewardCurrency);
+        this.experienceOrbs.push(new ExperienceOrb(this.boss.position, rewardExp));
+      } else {
+        this.addCurrency(200 * this.bossStage);
+        const expScale = 1 + this.stageManager.stage * 0.1;
+        this.experienceOrbs.push(new ExperienceOrb(this.boss.position, Math.ceil(1000 * expScale)));
+      }
+
       const maxPhase = this.isStageBoss ? 1 : 3;
       if (this.bossStage < maxPhase) {
         this.bossStage += 1;
@@ -693,6 +1210,9 @@ export default class Game {
           this.isStageBoss = false;
           this.stageManager.markBossCleared();
           this.handleStageClear();
+        }
+        if (this.dailyChallengeActive) {
+          this.completeDailyChallenge();
         }
         this.isBossChallenge = false;
         this.bossStage = 0;
@@ -745,6 +1265,8 @@ export default class Game {
     }
     this.isStageBoss = true;
     this.bossStage = 1;
+    const index = Math.floor(this.stageManager.stage / 5) - 1;
+    this.stageBossSpriteId = this.stageBossSprites[index % this.stageBossSprites.length];
     this.bossDifficulty = this.stageManager.stage >= 20 ? "hard" : "normal";
     this.spawnBoss(this.bossDifficulty);
   }
@@ -752,6 +1274,7 @@ export default class Game {
   handleStageClear() {
     this.spawnPortal();
     this.rewardRoundAdvance();
+    this.saveGame();
   }
 
   advanceStageFromPortal() {
@@ -853,6 +1376,39 @@ export default class Game {
       return;
     }
     this.stageMapOverlay.hidden = true;
+    this.handleOverlayClose();
+  }
+
+  openGameMenu() {
+    if (!this.menuOverlay) {
+      return;
+    }
+    this.returnToMenu = false;
+    this.menuOverlay.hidden = false;
+    this.setPaused(true);
+  }
+
+  closeGameMenu() {
+    if (!this.menuOverlay) {
+      return;
+    }
+    this.menuOverlay.hidden = true;
+    this.setPaused(false);
+  }
+
+  prepareMenuNavigation() {
+    this.returnToMenu = !!(this.menuOverlay && !this.menuOverlay.hidden);
+    if (this.returnToMenu) {
+      this.closeGameMenu();
+    }
+  }
+
+  handleOverlayClose() {
+    if (this.returnToMenu) {
+      this.returnToMenu = false;
+      this.openGameMenu();
+      return;
+    }
     this.setPaused(false);
   }
 
@@ -1024,7 +1580,7 @@ export default class Game {
       return;
     }
     this.inventoryOverlay.hidden = true;
-    this.setPaused(false);
+    this.handleOverlayClose();
   }
 
   openShop() {
@@ -1043,7 +1599,7 @@ export default class Game {
       return;
     }
     this.shopOverlay.hidden = true;
-    this.setPaused(false);
+    this.handleOverlayClose();
   }
 
   openStats() {
@@ -1060,7 +1616,7 @@ export default class Game {
       return;
     }
     this.statsOverlay.hidden = true;
-    this.setPaused(false);
+    this.handleOverlayClose();
   }
 
   updateInventoryUi() {
@@ -1163,6 +1719,24 @@ export default class Game {
     }
   }
 
+  updateSkillTreeUi() {
+    Object.entries(this.skillTree).forEach(([key, skill]) => {
+      const els = this.skillTreeElements[key];
+      if (!els || !els.cdEl || !els.timeEl) {
+        return;
+      }
+      if (skill.disabled) {
+        els.timeEl.textContent = "LOCK";
+        els.cdEl.style.setProperty("--cooldown", "1");
+        return;
+      }
+      const ratio =
+        skill.cooldown > 0 ? Math.max(0, Math.min(1, skill.timer / skill.cooldown)) : 0;
+      els.cdEl.style.setProperty("--cooldown", ratio.toFixed(3));
+      els.timeEl.textContent = skill.timer > 0 ? `${skill.timer.toFixed(1)}s` : "READY";
+    });
+  }
+
   buyShopItem() {
     const selected = this.shopItems.find((item) => item.id === this.selectedShopId);
     if (!selected || selected.sold) {
@@ -1240,9 +1814,16 @@ export default class Game {
     ];
   }
 
+  getCurrencyKey() {
+    if (!this.saveSlot) {
+      return this.baseCurrencyKey;
+    }
+    return `${this.baseCurrencyKey}:${this.saveSlot}`;
+  }
+
   loadCurrency() {
     try {
-      const stored = window.localStorage.getItem(this.currencyKey);
+      const stored = window.localStorage.getItem(this.getCurrencyKey());
       const value = Number(stored);
       return Number.isFinite(value) ? value : 0;
     } catch (error) {
@@ -1252,7 +1833,7 @@ export default class Game {
 
   saveCurrency() {
     try {
-      window.localStorage.setItem(this.currencyKey, String(this.currency));
+      window.localStorage.setItem(this.getCurrencyKey(), String(this.currency));
     } catch (error) {
       // Ignore storage errors.
     }
@@ -1518,6 +2099,32 @@ export default class Game {
     const choices = this.upgradeManager.catalog.getRandomChoices(3, this);
     this.presentUpgradeChoices(choices);
     this.refreshShop(true);
+  }
+
+  canStartDailyBoss() {
+    const today = new Date().toISOString().slice(0, 10);
+    const last = window.localStorage.getItem(this.dailyBossDateKey);
+    return last !== today;
+  }
+
+  startDailyBossChallenge() {
+    this.dailyChallengeActive = true;
+    this.isBossChallenge = true;
+    this.isStageBoss = false;
+    this.bossStage = 1;
+    this.bossDifficulty = "hard";
+    this.boss = null;
+    this.bossProjectiles = [];
+    this.enemies = [];
+    this.spawner.spawnTimer = 0;
+    this.spawnBoss(this.bossDifficulty);
+  }
+
+  completeDailyChallenge() {
+    this.dailyChallengeActive = false;
+    const today = new Date().toISOString().slice(0, 10);
+    window.localStorage.setItem(this.dailyBossDateKey, today);
+    this.saveGame();
   }
 }
 

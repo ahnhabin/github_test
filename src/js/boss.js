@@ -11,15 +11,19 @@ export default class Boss {
     this.projectileSpeed = config.projectileSpeed;
     this.attackInterval = config.attackInterval;
     this.burstInterval = config.burstInterval;
+    this.spriteType = config.spriteType || "mage";
+    this.spriteId = config.spriteId || null;
     this.animTime = 0;
     this.attackTimer = 0;
     this.burstTimer = 0;
+    this.hitTimer = 0;
   }
 
   update(delta, playerPosition) {
     this.animTime += delta;
     this.attackTimer += delta;
     this.burstTimer += delta;
+    this.hitTimer = Math.max(0, this.hitTimer - delta);
 
     const toPlayer = playerPosition.subtract(this.position);
     const distance = toPlayer.length();
@@ -32,6 +36,7 @@ export default class Boss {
 
   takeDamage(amount) {
     this.health = Math.max(0, this.health - amount);
+    this.hitTimer = 0.12;
   }
 
   isDead() {

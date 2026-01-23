@@ -1,9 +1,11 @@
-import Game from "./game.js";
+﻿import Game from "./game.js";
 
 document.addEventListener("DOMContentLoaded", () => {
   const game = Game.getInstance();
   const menu = document.getElementById("menu");
-  const startButton = document.getElementById("start-button");
+  const newGameButton = document.getElementById("new-game-button");
+  const continueButton = document.getElementById("continue-button");
+  const loadGameButton = document.getElementById("load-game-button");
   const panelButtons = document.querySelectorAll("[data-panel]");
   const panels = document.querySelectorAll(".menu__content");
   const canvas = document.getElementById("game");
@@ -11,13 +13,12 @@ document.addEventListener("DOMContentLoaded", () => {
   const characterGrid = document.getElementById("character-grid");
   const characterConfirm = document.getElementById("character-confirm");
   const characterCancel = document.getElementById("character-cancel");
-  const bossOpen = document.getElementById("boss-open");
-  const bossOverlay = document.getElementById("boss-select-overlay");
-  const bossGrid = document.getElementById("boss-grid");
-  const bossDifficulty = document.getElementById("boss-difficulty");
-  const bossConfirm = document.getElementById("boss-confirm");
-  const bossCancel = document.getElementById("boss-cancel");
-  const bossCancelRun = document.getElementById("boss-cancel-run");
+  const saveSelect = document.getElementById("save-select");
+  const saveGrid = document.getElementById("save-grid");
+  const saveConfirm = document.getElementById("save-confirm");
+  const saveCancel = document.getElementById("save-cancel");
+  const saveSelectTitle = document.getElementById("save-select-title");
+  const saveSelectDesc = document.getElementById("save-select-desc");
 
   const hidePanels = () => {
     panels.forEach((panel) => {
@@ -34,43 +35,46 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   const characterAssets = [
-    { id: "F_01", path: "src/asset/Females/F_01.png" },
-    { id: "M_12", path: "src/asset/Males/M_12.png" },
-    { id: "F_09", path: "src/asset/Females/F_09.png" },
-    { id: "M_08", path: "src/asset/Males/M_08.png" },
-    { id: "F_05", path: "src/asset/Females/F_05.png" },
-    { id: "M_05", path: "src/asset/Males/M_05.png" },
-    { id: "M_04", path: "src/asset/Males/M_04.png" },
-    { id: "F_11", path: "src/asset/Females/F_11.png" },
-    { id: "M_11", path: "src/asset/Males/M_11.png" },
-    { id: "F_07", path: "src/asset/Females/F_07.png" },
-    { id: "M_07", path: "src/asset/Males/M_07.png" },
-    { id: "F_04", path: "src/asset/Females/F_04.png" },
-    { id: "F_03", path: "src/asset/Females/F_03.png" },
-    { id: "M_03", path: "src/asset/Males/M_03.png" },
-    { id: "F_12", path: "src/asset/Females/F_12.png" },
-    { id: "M_10", path: "src/asset/Males/M_10.png" },
-    { id: "F_08", path: "src/asset/Females/F_08.png" },
-    { id: "M_06", path: "src/asset/Males/M_06.png" },
-    { id: "M_01", path: "src/asset/Males/M_01.png" },
-    { id: "F_02", path: "src/asset/Females/F_02.png" },
-    { id: "M_02", path: "src/asset/Males/M_02.png" },
-    { id: "F_10", path: "src/asset/Females/F_10.png" },
-    { id: "M_09", path: "src/asset/Males/M_09.png" },
-    { id: "F_06", path: "src/asset/Females/F_06.png" },
+    { id: "F_01", path: "src/assets/characters/female/f_01.png" },
+    { id: "M_12", path: "src/assets/characters/male/m_12.png" },
+    { id: "F_09", path: "src/assets/characters/female/f_09.png" },
+    { id: "M_08", path: "src/assets/characters/male/m_08.png" },
+    { id: "F_05", path: "src/assets/characters/female/f_05.png" },
+    { id: "M_05", path: "src/assets/characters/male/m_05.png" },
+    { id: "M_04", path: "src/assets/characters/male/m_04.png" },
+    { id: "F_11", path: "src/assets/characters/female/f_11.png" },
+    { id: "M_11", path: "src/assets/characters/male/m_11.png" },
+    { id: "F_07", path: "src/assets/characters/female/f_07.png" },
+    { id: "M_07", path: "src/assets/characters/male/m_07.png" },
+    { id: "F_04", path: "src/assets/characters/female/f_04.png" },
+    { id: "F_03", path: "src/assets/characters/female/f_03.png" },
+    { id: "M_03", path: "src/assets/characters/male/m_03.png" },
+    { id: "F_12", path: "src/assets/characters/female/f_12.png" },
+    { id: "M_10", path: "src/assets/characters/male/m_10.png" },
+    { id: "F_08", path: "src/assets/characters/female/f_08.png" },
+    { id: "M_06", path: "src/assets/characters/male/m_06.png" },
+    { id: "M_01", path: "src/assets/characters/male/m_01.png" },
+    { id: "F_02", path: "src/assets/characters/female/f_02.png" },
+    { id: "M_02", path: "src/assets/characters/male/m_02.png" },
+    { id: "F_10", path: "src/assets/characters/female/f_10.png" },
+    { id: "M_09", path: "src/assets/characters/male/m_09.png" },
+    { id: "F_06", path: "src/assets/characters/female/f_06.png" },
   ];
-
-  const bossOptions = [
-    {
-      id: "boss1",
-      name: "���� 1: ������",
-      description: "�߰Ÿ� ���� ����",
-      image: "src/asset/spritesheets/boss1/1stage/mage-1-85x94.png",
-    },
-  ];
-  let selectedBoss = null;
-  let selectedDifficulty = "normal";
   let selectedCharacter = null;
+
+  const getSaveKey = (slot) => `survivorPrototypeSave:${slot}`;
+  const getLastSlotKey = () => window.localStorage.getItem("survivorPrototypeLastSlot");
+  const readSave = (slot) => {
+    const raw = window.localStorage.getItem(getSaveKey(slot));
+    if (!raw) {
+      return null;
+    }
+    try {
+      return JSON.parse(raw);
+    } catch (error) {
+      return null;
+    }
+  };
 
   const renderCharacterGrid = () => {
     const fragment = document.createDocumentFragment();
@@ -117,38 +121,78 @@ document.addEventListener("DOMContentLoaded", () => {
     characterSelect.hidden = true;
   };
 
-  const renderBossGrid = () => {
-    const fragment = document.createDocumentFragment();
-    bossOptions.forEach((boss) => {
-      const card = document.createElement("button");
-      card.type = "button";
-      card.className = "boss-card";
-      card.dataset.bossId = boss.id;
-      card.innerHTML = `
-        <div class="boss-card__thumb"><img src="${boss.image}" alt="${boss.name}" /></div>
-        <div class="boss-card__title">${boss.name}</div>
-        <div class="boss-card__desc">${boss.description}</div>
-      `;
-      fragment.appendChild(card);
-    });
-    bossGrid.innerHTML = "";
-    bossGrid.appendChild(fragment);
-  };
-
-  const openBossOverlay = () => {
-    if (!bossGrid.hasChildNodes()) {
-      renderBossGrid();
+  const renderSaveGrid = () => {
+    if (!saveGrid) {
+      return;
     }
-    selectedBoss = null;
-    bossConfirm.disabled = true;
-    bossOverlay.hidden = false;
-    game.setPaused(true);
+    const fragment = document.createDocumentFragment();
+    for (let i = 1; i <= 3; i += 1) {
+      const slotId = `slot${i}`;
+      const data = readSave(slotId);
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "save-slot";
+      button.dataset.slot = slotId;
+      button.dataset.empty = data ? "false" : "true";
+      const subtitle = data ? `스테이지 ${data.stage} · 레벨 ${data.level}` : "비어있음";
+      const time = data?.updatedAt
+        ? new Date(data.updatedAt).toLocaleString("ko-KR")
+        : "새 게임 가능";
+      button.innerHTML = `
+        <div class="save-slot__title">슬롯 ${i}</div>
+        <div class="save-slot__meta">${subtitle}</div>
+        <div class="save-slot__meta">${time}</div>
+      `;
+      fragment.appendChild(button);
+    }
+    saveGrid.innerHTML = "";
+    saveGrid.appendChild(fragment);
   };
 
-  const closeBossOverlay = () => {
-    bossOverlay.hidden = true;
-    game.setPaused(false);
+  const updateSaveSelection = (target) => {
+    saveGrid.querySelectorAll(".save-slot").forEach((slot) => {
+      slot.classList.toggle("is-selected", slot === target);
+    });
   };
+
+  const openSaveSelect = (mode) => {
+    menu.classList.add("menu--selecting");
+    saveSelect.hidden = false;
+    saveConfirm.disabled = true;
+    saveSelect.dataset.mode = mode;
+    saveSelect.dataset.slot = "";
+    if (saveSelectTitle) {
+      saveSelectTitle.textContent =
+        mode === "load"
+          ? "게임 불러오기"
+          : mode === "daily"
+            ? "일일 보스 도전"
+            : "새 게임 슬롯 선택";
+    }
+    if (saveSelectDesc) {
+      saveSelectDesc.textContent =
+        mode === "load"
+          ? "이어할 저장 슬롯을 선택하세요."
+          : mode === "daily"
+            ? "도전할 저장 슬롯을 선택하세요."
+            : "새 게임을 저장할 슬롯을 선택하세요.";
+    }
+    renderSaveGrid();
+  };
+
+  const closeSaveSelect = () => {
+    menu.classList.remove("menu--selecting");
+    saveSelect.hidden = true;
+  };
+
+  const updateContinueButton = () => {
+    const slot = getLastSlotKey();
+    const data = slot ? readSave(slot) : null;
+    if (continueButton) {
+      continueButton.disabled = !data;
+    }
+  };
+
 
   panelButtons.forEach((button) => {
     button.addEventListener("click", () => {
@@ -163,60 +207,36 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  startButton.addEventListener("click", () => {
-    hidePanels();
-    if (!characterGrid.hasChildNodes()) {
-      renderCharacterGrid();
-    }
-    openCharacterSelect();
-  });
-
-  bossOpen.addEventListener("click", () => {
-    openBossOverlay();
-  });
-
-  bossGrid.addEventListener("click", (event) => {
-    const card = event.target.closest(".boss-card");
-    if (!card) {
-      return;
-    }
-    const bossId = card.dataset.bossId;
-    selectedBoss = bossOptions.find((boss) => boss.id === bossId) || null;
-    bossGrid.querySelectorAll(".boss-card").forEach((node) => {
-      node.classList.toggle("is-selected", node === card);
+  if (newGameButton) {
+    newGameButton.addEventListener("click", () => {
+      hidePanels();
+      openSaveSelect("new");
     });
-    bossConfirm.disabled = !selectedBoss;
-  });
+  }
 
-  bossDifficulty.addEventListener("click", (event) => {
-    const button = event.target.closest("[data-difficulty]");
-    if (!button) {
-      return;
-    }
-    selectedDifficulty = button.dataset.difficulty;
-    bossDifficulty.querySelectorAll("[data-difficulty]").forEach((node) => {
-      node.classList.toggle("is-selected", node === button);
+  if (loadGameButton) {
+    loadGameButton.addEventListener("click", () => {
+      hidePanels();
+      openSaveSelect("load");
     });
-  });
+  }
 
-  bossConfirm.addEventListener("click", () => {
-    if (!selectedBoss) {
-      return;
-    }
-    game.startBossChallenge({
-      bossId: selectedBoss.id,
-      difficulty: selectedDifficulty,
+
+  if (continueButton) {
+    continueButton.addEventListener("click", () => {
+      const slot = getLastSlotKey();
+      if (!slot) {
+        return;
+      }
+      const data = readSave(slot);
+      if (!data) {
+        return;
+      }
+      game.loadFromSave(data, slot);
+      menu.classList.add("is-hidden");
+      game.start();
     });
-    closeBossOverlay();
-  });
-
-  bossCancel.addEventListener("click", () => {
-    closeBossOverlay();
-  });
-
-  bossCancelRun.addEventListener("click", () => {
-    game.cancelBossChallenge();
-  });
+  }
 
   characterGrid.addEventListener("click", (event) => {
     const button = event.target.closest(".character-card");
@@ -237,6 +257,11 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!selectedCharacter) {
       return;
     }
+    const slot = saveSelect?.dataset.slot;
+    if (!slot) {
+      return;
+    }
+    game.resetForNewGame(slot);
     game.setPlayerProfile(selectedCharacter);
     menu.classList.add("is-hidden");
     closeCharacterSelect();
@@ -247,7 +272,55 @@ document.addEventListener("DOMContentLoaded", () => {
     closeCharacterSelect();
   });
 
+  if (saveGrid) {
+    saveGrid.addEventListener("click", (event) => {
+      const button = event.target.closest(".save-slot");
+      if (!button) {
+        return;
+      }
+      const isEmpty = button.dataset.empty === "true";
+      if (saveSelect?.dataset.mode === "load" && isEmpty) {
+        return;
+      }
+      saveSelect.dataset.slot = button.dataset.slot;
+      updateSaveSelection(button);
+      saveConfirm.disabled = false;
+    });
+  }
+
+  if (saveConfirm) {
+    saveConfirm.addEventListener("click", () => {
+      const slot = saveSelect?.dataset.slot;
+      const mode = saveSelect?.dataset.mode;
+      if (!slot || !mode) {
+        return;
+      }
+      if (mode === "new") {
+        if (!characterGrid.hasChildNodes()) {
+          renderCharacterGrid();
+        }
+        closeSaveSelect();
+        openCharacterSelect();
+      } else {
+        const data = readSave(slot);
+        if (!data) {
+          return;
+        }
+        game.loadFromSave(data, slot);
+        menu.classList.add("is-hidden");
+        closeSaveSelect();
+        game.start();
+      }
+    });
+  }
+
+  if (saveCancel) {
+    saveCancel.addEventListener("click", () => {
+      closeSaveSelect();
+    });
+  }
+
   window.addEventListener("resize", resizeCanvas);
   resizeCanvas();
+  updateContinueButton();
 });
-

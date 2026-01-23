@@ -5,15 +5,26 @@ export default class InputManager {
     this.keys = new Set();
     this.justPressed = new Set();
     window.addEventListener("keydown", (event) => {
-      if (event.key === " ") {
+      let key = event.key;
+      if (key.length === 1) {
+        key = key.toLowerCase();
+      }
+      if (key === " ") {
         event.preventDefault();
       }
-      if (!this.keys.has(event.key)) {
-        this.justPressed.add(event.key);
+      if (!this.keys.has(key)) {
+        this.justPressed.add(key);
       }
-      this.keys.add(event.key);
+      this.keys.add(key);
     });
-    window.addEventListener("keyup", (event) => this.keys.delete(event.key));
+    window.addEventListener("keyup", (event) => {
+      let key = event.key;
+      if (key.length === 1) {
+        key = key.toLowerCase();
+      }
+      this.keys.delete(key);
+      this.justPressed.delete(key);
+    });
   }
 
   consumePressed(key) {
@@ -25,10 +36,10 @@ export default class InputManager {
   }
 
   getDirection() {
-    const left = this.keys.has("a") || this.keys.has("ArrowLeft");
-    const right = this.keys.has("d") || this.keys.has("ArrowRight");
-    const up = this.keys.has("w") || this.keys.has("ArrowUp");
-    const down = this.keys.has("s") || this.keys.has("ArrowDown");
+    const left = this.keys.has("ArrowLeft");
+    const right = this.keys.has("ArrowRight");
+    const up = this.keys.has("ArrowUp");
+    const down = this.keys.has("ArrowDown");
 
     const direction = new Vector2(
       (right ? 1 : 0) - (left ? 1 : 0),

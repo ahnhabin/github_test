@@ -12,8 +12,14 @@ export default class GameRenderer {
     this.bossFrame = { w: 85, h: 94, cols: 4, rows: 2 };
     this.bossStage = 1;
     this.setBossSprite(1);
+    this.stageBossImage = new Image();
+    this.stageBossReady = false;
+    this.stageBossImage.src = "src/assets/boss/stage/critters.png";
+    this.stageBossImage.addEventListener("load", () => {
+      this.stageBossReady = true;
+    });
     this.bossBulletImage = new Image();
-    this.bossBulletImage.src = "src/asset/spritesheets/boss1/bullet/mage-bullet-13x13.png";
+    this.bossBulletImage.src = "src/assets/boss/boss1/bullet.png";
     this.bossBulletReady = false;
     this.bossBulletProcessed = null;
     this.bossBulletImage.addEventListener("load", () => {
@@ -21,7 +27,7 @@ export default class GameRenderer {
       this.bossBulletReady = true;
     });
     this.droneImage = new Image();
-    this.droneImage.src = "src/asset/dron/modular_ships.png";
+    this.droneImage.src = "src/assets/drones/modular_ships.png";
     this.droneReady = false;
     this.droneProcessed = null;
     this.droneLevel = 1;
@@ -35,13 +41,13 @@ export default class GameRenderer {
       this.droneReady = true;
     });
     this.spriteImage = new Image();
-    this.spriteImage.src = "src/asset/rpgcritters2.png";
+    this.spriteImage.src = "src/assets/enemies/critters.png";
     this.spriteReady = false;
     this.spriteImage.addEventListener("load", () => {
       this.spriteReady = true;
     });
     this.bulletImage = new Image();
-    this.bulletImage.src = "src/asset/M484BulletCollection1.png";
+    this.bulletImage.src = "src/assets/projectiles/bullet_sheet.png";
     this.bulletReady = false;
     this.bulletProcessed = null;
     this.bulletImage.addEventListener("load", () => {
@@ -49,7 +55,7 @@ export default class GameRenderer {
       this.bulletReady = true;
     });
     this.tileImage = new Image();
-    this.tileImage.src = "src/asset/forest_tiles.png";
+    this.tileImage.src = "src/assets/tiles/forest_tiles.png";
     this.tileReady = false;
     this.tileProcessed = null;
     this.tileImage.addEventListener("load", () => {
@@ -193,7 +199,7 @@ export default class GameRenderer {
     enemies.forEach((enemy) => {
       if (this.spriteReady && enemy.spriteId && this.sprites.enemies[enemy.spriteId]) {
         const sprite = this.sprites.enemies[enemy.spriteId];
-        const size = enemy.radius * 2.4;
+        const size = enemy.radius * 3;
         const alpha = enemy.hitTimer > 0 ? 0.5 : 1;
         this.drawSprite(sprite, enemy.position.x, enemy.position.y, size, alpha);
         return;
@@ -210,7 +216,20 @@ export default class GameRenderer {
   }
 
   drawBoss(boss) {
-    if (!boss || !this.bossReady) {
+    if (!boss) {
+      return;
+    }
+    if (boss.spriteType === "critter" && boss.spriteId && this.stageBossReady) {
+      const sprite = this.sprites.enemies[boss.spriteId];
+      if (!sprite) {
+        return;
+      }
+      const size = boss.radius * 3.6;
+      const alpha = boss.hitTimer > 0 ? 0.6 : 1;
+      this.drawSprite(sprite, boss.position.x, boss.position.y, size, alpha, this.stageBossImage);
+      return;
+    }
+    if (!this.bossReady) {
       return;
     }
     const screen = this.toScreen(boss.position.x, boss.position.y);
@@ -618,13 +637,13 @@ export default class GameRenderer {
   setBossSprite(stage) {
     const stageIndex = stage || 1;
     this.bossStage = stageIndex;
-    let path = "src/asset/spritesheets/boss1/1stage/mage-1-85x94.png";
+    let path = "src/assets/boss/boss1/stage1.png";
     let frame = { w: 85, h: 94, cols: 4, rows: 2 };
     if (stageIndex === 2) {
-      path = "src/asset/spritesheets/boss1/2stage/mage-2-122x110.png";
+      path = "src/assets/boss/boss1/stage2.png";
       frame = { w: 122, h: 110, cols: 4, rows: 2 };
     } else if (stageIndex === 3) {
-      path = "src/asset/spritesheets/boss1/3stage/mage-3-87x110.png";
+      path = "src/assets/boss/boss1/stage3.png";
       frame = { w: 87, h: 110, cols: 4, rows: 2 };
     }
     this.bossReady = false;

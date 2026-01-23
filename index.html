@@ -12,7 +12,9 @@
         <h1 class="menu__title">Survivor Prototype</h1>
         <p class="menu__tagline">파도처럼 몰려오는 적을 버티며 성장하세요.</p>
         <div class="menu__actions">
-          <button class="menu__button menu__button--primary" id="start-button" type="button">게임 시작</button>
+          <button class="menu__button menu__button--primary" id="new-game-button" type="button">새 게임</button>
+          <button class="menu__button" id="continue-button" type="button" disabled>이어하기</button>
+          <button class="menu__button" id="load-game-button" type="button">게임 불러오기</button>
           <button class="menu__button" data-panel="options-panel" type="button">옵션 설정</button>
           <button class="menu__button" data-panel="credits-panel" type="button">만든이</button>
         </div>
@@ -39,6 +41,17 @@
             <button class="menu__button" id="character-cancel" type="button">뒤로</button>
           </div>
         </div>
+        <div class="save-select" id="save-select" hidden>
+          <h2 id="save-select-title">저장 슬롯 선택</h2>
+          <p id="save-select-desc">저장할 슬롯을 선택하세요.</p>
+          <div class="save-grid" id="save-grid"></div>
+          <div class="character-actions">
+            <button class="menu__button menu__button--primary" id="save-confirm" type="button" disabled>
+              확인
+            </button>
+            <button class="menu__button" id="save-cancel" type="button">뒤로</button>
+          </div>
+        </div>
       </div>
     </div>
     <div class="game">
@@ -54,6 +67,40 @@
           <span class="skill__key">SPACE</span>
           <span class="skill__time" id="skill-time">READY</span>
         </div>
+      </div>
+    </div>
+    <div class="skill-tree" aria-live="polite">
+      <div class="skill-tree__slot" data-skill="q">
+        <div class="skill-tree__icon">
+          <div class="skill-tree__cooldown" id="skill-q-cd"></div>
+          <span class="skill-tree__label">집중공격</span>
+        </div>
+        <div class="skill-tree__key">Q</div>
+        <div class="skill-tree__time" id="skill-q-time">READY</div>
+      </div>
+      <div class="skill-tree__slot" data-skill="w">
+        <div class="skill-tree__icon">
+          <div class="skill-tree__cooldown" id="skill-w-cd"></div>
+          <span class="skill-tree__label">속도증가</span>
+        </div>
+        <div class="skill-tree__key">W</div>
+        <div class="skill-tree__time" id="skill-w-time">READY</div>
+      </div>
+      <div class="skill-tree__slot" data-skill="e">
+        <div class="skill-tree__icon">
+          <div class="skill-tree__cooldown" id="skill-e-cd"></div>
+          <span class="skill-tree__label">쿨다운</span>
+        </div>
+        <div class="skill-tree__key">E</div>
+        <div class="skill-tree__time" id="skill-e-time">READY</div>
+      </div>
+      <div class="skill-tree__slot skill-tree__slot--locked" data-skill="r">
+        <div class="skill-tree__icon">
+          <div class="skill-tree__cooldown" id="skill-r-cd"></div>
+          <span class="skill-tree__label">잠금</span>
+        </div>
+        <div class="skill-tree__key">R</div>
+        <div class="skill-tree__time" id="skill-r-time">LOCK</div>
       </div>
     </div>
     <div class="hud-overlay" aria-live="polite">
@@ -75,29 +122,7 @@
         <div>발사 쿨타임 <span id="fire-rate">1.0</span>s</div>
         <div>HP <span id="hp">10 / 10</span></div>
       </div>
-      <button class="hud-overlay__boss" id="boss-open" type="button">보스 도전</button>
-      <button class="hud-overlay__shop" id="shop-open" type="button">
-        상점
-        <span class="hud-overlay__badge" id="shop-badge" hidden>!</span>
-      </button>
-      <div class="hud-overlay__auto">
-        <button class="hud-overlay__auto-toggle" id="auto-toggle" type="button">AUTO OFF</button>
-        <div class="hud-overlay__auto-modes">
-          <button class="hud-overlay__auto-btn is-selected" data-auto-mode="balance" type="button">
-            BALANCE
-          </button>
-          <button class="hud-overlay__auto-btn" data-auto-mode="attack" type="button">ATTACK</button>
-          <button class="hud-overlay__auto-btn" data-auto-mode="survival" type="button">
-            SURVIVAL
-          </button>
-        </div>
-      </div>
-      <button class="hud-overlay__inventory" id="inventory-open" type="button">인벤토리</button>
-      <button class="hud-overlay__stats" id="stats-open" type="button">스탯</button>
-      <button class="hud-overlay__map" id="stage-map-open" type="button">
-        월드맵
-        <span class="hud-overlay__badge" id="stage-map-badge" hidden>!</span>
-      </button>
+      <button class="hud-overlay__menu" id="menu-open" type="button">메뉴</button>
     </div>
     <div class="inventory-overlay" id="inventory-overlay" hidden>
       <div class="inventory-panel">
@@ -177,24 +202,40 @@
         </div>
       </div>
     </div>
-    <div class="boss-select-overlay" id="boss-select-overlay" hidden>
-      <div class="boss-select">
-        <h2>보스 도전</h2>
-        <p>도전할 보스와 난이도를 선택하세요.</p>
-        <div class="boss-grid" id="boss-grid"></div>
-        <div class="boss-difficulty" id="boss-difficulty">
-          <button class="menu__button boss-difficulty__btn is-selected" data-difficulty="normal" type="button">
-            NORMAL
-          </button>
-          <button class="menu__button boss-difficulty__btn" data-difficulty="hard" type="button">
-            HARD
-          </button>
+    <div class="game-menu-overlay" id="game-menu-overlay" hidden>
+      <div class="game-menu-panel">
+        <div class="game-menu-header">
+          <h2>게임 메뉴</h2>
+          <button class="menu__button" id="menu-close" type="button">닫기</button>
         </div>
-        <div class="character-actions">
-          <button class="menu__button menu__button--primary" id="boss-confirm" type="button" disabled>
-            보스 도전
+        <div class="game-menu-body">
+          <button class="menu__button" id="daily-boss-open" type="button">일일 보스 도전</button>
+          <button class="menu__button" id="shop-open" type="button">
+            상점
+            <span class="hud-overlay__badge" id="shop-badge" hidden>!</span>
           </button>
-          <button class="menu__button" id="boss-cancel" type="button">닫기</button>
+          <div class="game-menu__auto">
+            <button class="menu__button" id="auto-toggle" type="button">AUTO OFF</button>
+            <div class="hud-overlay__auto-modes">
+              <button class="hud-overlay__auto-btn is-selected" data-auto-mode="balance" type="button">
+                BALANCE
+              </button>
+              <button class="hud-overlay__auto-btn" data-auto-mode="attack" type="button">ATTACK</button>
+              <button class="hud-overlay__auto-btn" data-auto-mode="survival" type="button">
+                SURVIVAL
+              </button>
+            </div>
+          </div>
+          <button class="menu__button" id="inventory-open" type="button">인벤토리</button>
+          <button class="menu__button" id="stats-open" type="button">스탯</button>
+          <button class="menu__button" id="stage-map-open" type="button">
+            월드맵
+            <span class="hud-overlay__badge" id="stage-map-badge" hidden>!</span>
+          </button>
+          <button class="menu__button" id="game-save" type="button">저장</button>
+          <button class="menu__button menu__button--primary" id="game-main-menu" type="button">
+            메인 메뉴
+          </button>
         </div>
       </div>
     </div>
@@ -206,7 +247,6 @@
       <div class="boss-bar__track">
         <div class="boss-bar__fill" id="boss-hp-bar"></div>
       </div>
-      <button class="boss-bar__cancel" id="boss-cancel-run" type="button">도전 취소</button>
     </div>
     <div class="overlay" id="overlay" aria-live="polite">
       <div class="overlay__panel" id="overlay-panel">
